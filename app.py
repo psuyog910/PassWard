@@ -37,7 +37,7 @@ def init_db():
         st.session_state['db_path'] = db_path
 
 # Streamlit UI
-st.title('SecurePass')
+st.title('PassWard: Lock. Encrypt. Protect.')
 
 # Initialize the database
 if 'session_id' not in st.session_state:
