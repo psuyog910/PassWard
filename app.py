@@ -4,17 +4,21 @@ import streamlit_authenticator as stauth
 from cryptography.fernet import Fernet
 import base64
 import hashlib
+import toml
+
+# Load secrets from secrets.toml
+secrets = toml.load("secrets.toml")
 
 # Firebase configuration
 firebase_config = {
-    "apiKey": st.secrets["firebase"]["apiKey"],
-    "authDomain": st.secrets["firebase"]["authDomain"],
-    "projectId": st.secrets["firebase"]["projectId"],
-    "storageBucket": st.secrets["firebase"]["storageBucket"],
-    "messagingSenderId": st.secrets["firebase"]["messagingSenderId"],
-    "appId": st.secrets["firebase"]["appId"],
-    "measurementId": st.secrets["firebase"]["measurementId"],
-    "databaseURL": st.secrets["firebase"]["databaseURL"]
+    "apiKey": secrets["firebase"]["apiKey"],
+    "authDomain": secrets["firebase"]["authDomain"],
+    "projectId": secrets["firebase"]["projectId"],
+    "storageBucket": secrets["firebase"]["storageBucket"],
+    "messagingSenderId": secrets["firebase"]["messagingSenderId"],
+    "appId": secrets["firebase"]["appId"],
+    "measurementId": secrets["firebase"]["measurementId"],
+    "databaseURL": secrets["firebase"]["databaseURL"]
 }
 
 # Initialize Firebase
