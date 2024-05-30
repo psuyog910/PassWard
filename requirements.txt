@@ -3,3 +3,4 @@ pyrebase4
 toml 
 streamlit-authenticator 
 cryptography
+google-cloud-firestore
