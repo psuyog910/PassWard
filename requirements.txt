@@ -1,6 +1,6 @@
-streamlit==1.11.0
-pyrebase4==4.5.0
-streamlit-authenticator==0.1.6
-cryptography==39.0.1
-google-cloud-firestore==2.7.0
-google-auth==2.16.2
+streamlit
+pyrebase4
+streamlit-authenticator
+cryptography
+google-cloud-firestore
+google-auth
