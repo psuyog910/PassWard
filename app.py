@@ -4,21 +4,17 @@ import streamlit_authenticator as stauth
 from cryptography.fernet import Fernet
 import base64
 import hashlib
-import toml
 
-# Load secrets from secrets.toml
-secrets = toml.load("secrets.toml")
-
-# Firebase configuration
+# Firebase configuration using Streamlit secrets
 firebase_config = {
-    "apiKey": secrets["firebase"]["apiKey"],
-    "authDomain": secrets["firebase"]["authDomain"],
-    "projectId": secrets["firebase"]["projectId"],
-    "storageBucket": secrets["firebase"]["storageBucket"],
-    "messagingSenderId": secrets["firebase"]["messagingSenderId"],
-    "appId": secrets["firebase"]["appId"],
-    "measurementId": secrets["firebase"]["measurementId"],
-    "databaseURL": secrets["firebase"]["databaseURL"]
+    "apiKey": st.secrets["firebase"]["apiKey"],
+    "authDomain": st.secrets["firebase"]["authDomain"],
+    "projectId": st.secrets["firebase"]["projectId"],
+    "storageBucket": st.secrets["firebase"]["storageBucket"],
+    "messagingSenderId": st.secrets["firebase"]["messagingSenderId"],
+    "appId": st.secrets["firebase"]["appId"],
+    "measurementId": st.secrets["firebase"]["measurementId"],
+    "databaseURL": st.secrets["firebase"]["databaseURL"]
 }
 
 # Initialize Firebase
@@ -44,12 +40,12 @@ def decrypt_password(encrypted_password, passkey):
     return decrypted_password
 
 # Streamlit UI
-st.title('PassWard')
+st.title('SecurePass')
 
 # User Authentication
 authenticator = stauth.Authenticate(
-    {'name': 'Passward', 'icon': '\ud83d\udd12'},
-    'passward'
+    {'name': 'SecurePass', 'icon': '\ud83d\udd12'},
+    'securepass'
 )
 
 name, authentication_status, username = authenticator.login('Login', 'main')
