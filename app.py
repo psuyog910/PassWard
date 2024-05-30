@@ -44,12 +44,12 @@ def decrypt_password(encrypted_password, passkey):
     return decrypted_password
 
 # Streamlit UI
-st.title('SecurePass')
+st.title('PassWard')
 
 # User Authentication
 authenticator = stauth.Authenticate(
-    {'name': 'SecurePass', 'icon': '\ud83d\udd12'},
-    'securepass'
+    {'name': 'Passward', 'icon': '\ud83d\udd12'},
+    'passward'
 )
 
 name, authentication_status, username = authenticator.login('Login', 'main')
