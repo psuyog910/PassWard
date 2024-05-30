@@ -1,13 +1,29 @@
 import streamlit as st
-import sqlite3
+import pyrebase
+import streamlit_authenticator as stauth
 from cryptography.fernet import Fernet
 import base64
 import hashlib
-import os
+
+# Firebase configuration
+firebase_config = {
+    "apiKey": st.secrets["firebase"]["apiKey"],
+    "authDomain": st.secrets["firebase"]["authDomain"],
+    "projectId": st.secrets["firebase"]["projectId"],
+    "storageBucket": st.secrets["firebase"]["storageBucket"],
+    "messagingSenderId": st.secrets["firebase"]["messagingSenderId"],
+    "appId": st.secrets["firebase"]["appId"],
+    "measurementId": st.secrets["firebase"]["measurementId"],
+    "databaseURL": st.secrets["firebase"]["databaseURL"]
+}
+
+# Initialize Firebase
+firebase = pyrebase.initialize_app(firebase_config)
+auth = firebase.auth()
+db = firebase.database()
 
 # Generate a key based on the passkey
 def get_key(passkey):
-    # Use SHA-256 to hash the passkey and then base64 encode the first 32 bytes
     key = hashlib.sha256(passkey.encode()).digest()
     return base64.urlsafe_b64encode(key[:32])
 
@@ -23,70 +39,59 @@ def decrypt_password(encrypted_password, passkey):
     decrypted_password = fernet.decrypt(encrypted_password.encode()).decode()
     return decrypted_password
 
-# Initialize the database for the session
-def init_db():
-    if 'db_initialized' not in st.session_state:
-        db_path = f"passwords_{st.session_state.session_id}.db"
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS passwords
-                          (id INTEGER PRIMARY KEY, name TEXT, encrypted_password TEXT)''')
-        conn.commit()
-        conn.close()
-        st.session_state['db_initialized'] = True
-        st.session_state['db_path'] = db_path
-
 # Streamlit UI
-st.title('PassWard: Lock. Encrypt. Protect.')
+st.title('SecurePass')
 
-# Initialize the database
-if 'session_id' not in st.session_state:
-    st.session_state['session_id'] = os.urandom(16).hex()
-init_db()
+# User Authentication
+authenticator = stauth.Authenticate(
+    {'name': 'SecurePass', 'icon': '\ud83d\udd12'},
+    'securepass'
+)
 
-st.header('Encrypt a Password')
-with st.form('encrypt_form'):
-    name = st.text_input('Password Name')
-    password = st.text_input('Password', type='password')
-    passkey = st.text_input('Passkey')
-    encrypt_button = st.form_submit_button('Encrypt')
+name, authentication_status, username = authenticator.login('Login', 'main')
 
-    if encrypt_button:
-        encrypted_password = encrypt_password(password, passkey)
+if authentication_status:
+    st.success(f'Welcome {name}!')
+    user_id = auth.current_user['localId']
 
-        conn = sqlite3.connect(st.session_state['db_path'])
-        cursor = conn.cursor()
-        cursor.execute('INSERT INTO passwords (name, encrypted_password) VALUES (?, ?)', (name, encrypted_password))
-        conn.commit()
-        conn.close()
+    st.header('Encrypt a Password')
+    with st.form('encrypt_form'):
+        name = st.text_input('Password Name')
+        password = st.text_input('Password', type='password')
+        passkey = st.text_input('Passkey')
+        encrypt_button = st.form_submit_button('Encrypt')
 
-        st.success('Password encrypted and saved successfully!')
+        if encrypt_button:
+            encrypted_password = encrypt_password(password, passkey)
+            db.child("users").child(user_id).child("passwords").push({
+                "name": name,
+                "encrypted_password": encrypted_password
+            })
+            st.success('Password encrypted and saved successfully!')
 
-st.header('Decrypt a Password')
-with st.form('decrypt_form'):
-    conn = sqlite3.connect(st.session_state['db_path'])
-    cursor = conn.cursor()
-    cursor.execute('SELECT name FROM passwords')
-    names = cursor.fetchall()
-    conn.close()
+    st.header('Decrypt a Password')
+    passwords = db.child("users").child(user_id).child("passwords").get().val()
+    if passwords:
+        password_names = [pwd["name"] for pwd in passwords.values()]
+        name = st.selectbox('Password Name', password_names)
+        passkey = st.text_input('Passkey')
+        decrypt_button = st.form_submit_button('Decrypt')
 
-    name = st.selectbox('Password Name', [name[0] for name in names])
-    passkey = st.text_input('Passkey')
-    decrypt_button = st.form_submit_button('Decrypt')
+        if decrypt_button:
+            for pwd in passwords.values():
+                if pwd["name"] == name:
+                    encrypted_password = pwd["encrypted_password"]
+                    try:
+                        decrypted_password = decrypt_password(encrypted_password, passkey)
+                        st.success(f'Decrypted Password: {decrypted_password}')
+                    except Exception as e:
+                        st.error('Invalid passkey or error decrypting password!')
+                    break
+    else:
+        st.warning('No passwords found.')
 
-    if decrypt_button:
-        conn = sqlite3.connect(st.session_state['db_path'])
-        cursor = conn.cursor()
-        cursor.execute('SELECT encrypted_password FROM passwords WHERE name=?', (name,))
-        row = cursor.fetchone()
-        conn.close()
+elif authentication_status == False:
+    st.error('Username/password is incorrect')
 
-        if row:
-            encrypted_password = row[0]
-            try:
-                decrypted_password = decrypt_password(encrypted_password, passkey)
-                st.success(f'Decrypted Password: {decrypted_password}')
-            except Exception as e:
-                st.error('Invalid passkey or error decrypting password!')
-        else:
-            st.error('No password found for the given name!')
+elif authentication_status == None:
+    st.warning('Please enter your username and password')
