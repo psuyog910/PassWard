@@ -4,6 +4,7 @@ import streamlit_authenticator as stauth
 from cryptography.fernet import Fernet
 import base64
 import hashlib
+from google.cloud import firestore
 
 # Firebase configuration using Streamlit secrets
 firebase_config = {
@@ -19,7 +20,9 @@ firebase_config = {
 # Initialize Firebase
 firebase = pyrebase.initialize_app(firebase_config)
 auth = firebase.auth()
-db = firebase.database()
+
+# Initialize Firestore
+db = firestore.Client()
 
 # Generate a key based on the passkey
 def get_key(passkey):
@@ -43,7 +46,7 @@ st.title('SecurePass')
 
 # User Authentication
 authenticator = stauth.Authenticate(
-    {'name': 'SecurePass', 'icon': '\ud83d\udd12'},
+    {'name': 'SecurePass', 'icon': '\\ud83d\\udd12'},
     'securepass'
 )
 
@@ -62,22 +65,23 @@ if authentication_status:
 
         if encrypt_button:
             encrypted_password = encrypt_password(password, passkey)
-            db.child("users").child(user_id).child("passwords").push({
+            db.collection("users").document(user_id).collection("passwords").add({
                 "name": name,
                 "encrypted_password": encrypted_password
             })
             st.success('Password encrypted and saved successfully!')
 
     st.header('Decrypt a Password')
-    passwords = db.child("users").child(user_id).child("passwords").get().val()
-    if passwords:
-        password_names = [pwd["name"] for pwd in passwords.values()]
+    passwords = db.collection("users").document(user_id).collection("passwords").stream()
+    password_list = {doc.id: doc.to_dict() for doc in passwords}
+    if password_list:
+        password_names = [pwd["name"] for pwd in password_list.values()]
         name = st.selectbox('Password Name', password_names)
         passkey = st.text_input('Passkey')
         decrypt_button = st.form_submit_button('Decrypt')
 
         if decrypt_button:
-            for pwd in passwords.values():
+            for doc_id, pwd in password_list.items():
                 if pwd["name"] == name:
                     encrypted_password = pwd["encrypted_password"]
                     try:
