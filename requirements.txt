@@ -1,5 +1,5 @@
-streamlit
+streamlit 
+pyrebase4 
+toml 
+streamlit-authenticator 
 cryptography
-pycryptodome
-pyrebase4
-toml
