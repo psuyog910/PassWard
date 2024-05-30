@@ -5,6 +5,7 @@ from cryptography.fernet import Fernet
 import base64
 import hashlib
 from google.cloud import firestore
+from google.oauth2 import service_account
 
 # Firebase configuration using Streamlit secrets
 firebase_config = {
@@ -22,8 +23,9 @@ firebase_config = {
 firebase = pyrebase.initialize_app(firebase_config)
 auth = firebase.auth()
 
-# Initialize Firestore
-db = firestore.Client()
+# Initialize Firestore with credentials from secrets
+credentials = service_account.Credentials.from_service_account_info(st.secrets["firebase"]["service_account"])
+db = firestore.Client(credentials=credentials, project=st.secrets["firebase"]["projectId"])
 
 # Generate a key based on the passkey
 def get_key(passkey):
@@ -47,7 +49,7 @@ st.title('SecurePass')
 
 # User Authentication
 authenticator = stauth.Authenticate(
-    {'name': 'SecurePass', 'icon': '\\ud83d\\udd12'},
+    {'name': 'SecurePass', 'icon': '🔒'},
     'securepass'
 )
 
@@ -79,7 +81,7 @@ if authentication_status:
         password_names = [pwd["name"] for pwd in password_list.values()]
         name = st.selectbox('Password Name', password_names)
         passkey = st.text_input('Passkey')
-        decrypt_button = st.form_submit_button('Decrypt')
+        decrypt_button = st.button('Decrypt')
 
         if decrypt_button:
             for doc_id, pwd in password_list.items():
