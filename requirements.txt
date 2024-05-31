@@ -1,6 +1,5 @@
-streamlit
-pyrebase4
-streamlit-authenticator
+Flask
 cryptography
-google-cloud-firestore
-google-auth
+Flask-OAuthlib
+sqlite3
+gunicorn
